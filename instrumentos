@@ -1,0 +1,124 @@
+from tabulate import tabulate
+import sqlite3
+
+
+# Nombre del archivo de la base de datos
+NOMBRE_BASE_DATOS = 'instrumentos.db'
+
+# Crear la conexión y tabla si no existe
+def inicializar_db():
+    conexion = sqlite3.connect(NOMBRE_BASE_DATOS)
+    cursor = conexion.cursor()
+
+    # Crear tabla si no existe
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS instrumentos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            enlace TEXT NOT NULL
+        )
+    ''')
+    conexion.commit()
+    conexion.close()
+
+# Función para mostrar el menú principal
+def mostrar_menu():
+    print("\n--- Tienda de Instrumentos ---")
+    print("1. Agregar instrumento")
+    print("2. Ver instrumentos")
+    print("3. Actualizar instrumento")
+    print("4. Eliminar instrumento")
+    print("5. Salir")
+
+# Función para agregar un instrumento
+def agregar_instrumento():
+    nombre = input("Introduce el nombre del instrumento: ")
+    enlace = input("Introduce el enlace de compra: ")
+
+    conexion = sqlite3.connect(NOMBRE_BASE_DATOS)
+    cursor = conexion.cursor()
+
+    cursor.execute("INSERT INTO instrumentos (nombre, enlace) VALUES (?, ?)", (nombre, enlace))
+    conexion.commit()
+    conexion.close()
+
+    print(f"Instrumento '{nombre}' agregado con éxito.")
+
+# Función para ver los instrumentos
+def ver_instrumentos():
+    conexion = sqlite3.connect(NOMBRE_BASE_DATOS)
+    cursor = conexion.cursor()
+
+    cursor.execute("SELECT * FROM instrumentos")
+    instrumentos = cursor.fetchall()
+    conexion.close()
+
+    if not instrumentos:
+        print("No hay instrumentos registrados aún.")
+        return
+
+    # Formatear datos para mejor visualización
+    tabla = []
+    for id_, nombre, enlace in instrumentos:
+        # Limitar la longitud del enlace para mayor legibilidad
+        enlace_resumido = enlace[:50] + '...' if len(enlace) > 50 else enlace
+        tabla.append([id_, nombre, enlace_resumido])
+
+    print("\n--- Lista de Instrumentos ---")
+    print(tabulate(tabla, headers=["ID", "Nombre", "Enlace (resumido)"], tablefmt="grid"))
+
+# Función para actualizar un instrumento
+def actualizar_instrumento():
+    ver_instrumentos()
+    id_instrumento = input("Introduce el ID del instrumento que deseas actualizar: ")
+
+    nuevo_nombre = input("Introduce el nuevo nombre del instrumento: ")
+    nuevo_enlace = input("Introduce el nuevo enlace de compra: ")
+
+    conexion = sqlite3.connect(NOMBRE_BASE_DATOS)
+    cursor = conexion.cursor()
+
+    cursor.execute("UPDATE instrumentos SET nombre = ?, enlace = ? WHERE id = ?", 
+                   (nuevo_nombre, nuevo_enlace, id_instrumento))
+    conexion.commit()
+    conexion.close()
+
+    print(f"Instrumento con ID {id_instrumento} actualizado con éxito.")
+
+# Función para eliminar un instrumento
+def eliminar_instrumento():
+    ver_instrumentos()
+    id_instrumento = input("Introduce el ID del instrumento que deseas eliminar: ")
+
+    conexion = sqlite3.connect(NOMBRE_BASE_DATOS)
+    cursor = conexion.cursor()
+
+    cursor.execute("DELETE FROM instrumentos WHERE id = ?", (id_instrumento,))
+    conexion.commit()
+    conexion.close()
+
+    print(f"Instrumento con ID {id_instrumento} eliminado con éxito.")
+
+# Programa principal
+def main():
+    inicializar_db()
+    while True:
+        mostrar_menu()
+        opcion = input("Selecciona una opción: ")
+
+        if opcion == '1':
+            agregar_instrumento()
+        elif opcion == '2':
+            ver_instrumentos()
+        elif opcion == '3':
+            actualizar_instrumento()
+        elif opcion == '4':
+            eliminar_instrumento()
+        elif opcion == '5':
+            print("Gracias por usar la Tienda de Instrumentos.")
+            break
+        else:
+            print("Opción no válida. Intenta de nuevo.")
+
+if __name__ == '__main__':
+    main()
